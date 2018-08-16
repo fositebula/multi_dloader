@@ -94,6 +94,7 @@ class TSServProtocol(protocol.Protocol):
                 f.truncate()
                 json.dump(data, f)
                 f.flush()
+                fcntl.flock(f, fcntl.LOCK_UN)
                 break
 
 
