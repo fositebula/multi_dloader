@@ -88,8 +88,9 @@ class TSServProtocol(protocol.Protocol):
             with open(CONF_FILE, 'r+') as f:
                 fcntl.flock(f, fcntl.LOCK_EX)
                 data = json.load(f)
-                data[used_usb]['who'] = 0
-                data[used_usb]['used'] = False
+                if used_usb != '':
+                    data[used_usb]['who'] = 0
+                    data[used_usb]['used'] = False
                 f.seek(0)
                 f.truncate()
                 json.dump(data, f)
