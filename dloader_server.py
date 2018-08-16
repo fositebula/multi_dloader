@@ -34,7 +34,7 @@ class TSServProtocol(protocol.Protocol):
                     lava_used.append(k)
 
             #将不是lava用的找出来
-            lava_not_used = dev_usbs - lava_used
+            lava_not_used = set(dev_usbs) - (lava_used)
 
             #把不是lava用的更新到USB info文件中
             for u in lava_not_used:
