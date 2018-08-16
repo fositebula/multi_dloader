@@ -3,6 +3,7 @@ from sys import stdout
 from dloader_logger import logger
 import traceback
 import subprocess
+import os
 import sys
 from twisted.internet import reactor
 
@@ -14,15 +15,23 @@ USB_INFO = '/home/apuser/lavatest/USBPortInfos.json'
 THIS_USB = ''
 
 def dloader(pac, ttyusbx):
-    pro = subprocess.run(['sudo', DLOADER_PATH, '-pac', pac, '-dev', ttyusbx, '-reset'])
-    #os.system('sudo '+ DLOADER_PATH+ ' -pac '+ pac+ ' -dev '+ ttyusbx+' -reset')
+    logger.info('fun dloader')
+    #pro = subprocess.run(['sudo', DLOADER_PATH, '-pac', pac, '-dev', ttyusbx, '-reset'])
+    os.system('sudo '+ DLOADER_PATH+ ' -pac '+ pac+ ' -dev '+ ttyusbx+' -reset')
+
+def enter_autodloader(sn):
+    logger.info('fun enter dloader: '+str(sn))
+    os.system('adb -s ' + sn + 'reboot autodloader')
 
 class Echo(Protocol):
     def dataReceived(self, data):
         ttyUSBX = data
         pac = sys.argv[1]
+        # serial_number = sys.argv[2]
+        # enter_autodloader(serial_number)
+        logger.info('ECHO pac '+pac)
         dloader(pac, ttyUSBX)
-        stdout.write(data)
+        #stdout.write(data)
 
 
 class EchoClientFactory(ClientFactory):

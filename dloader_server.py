@@ -4,58 +4,48 @@ from twisted.internet import protocol, reactor
 import json
 import os
 import fcntl
-class NoUSBInfoConfig(Exception):
-    pass
-
+import copy
 
 CONF_FILE = 'USBPortInfo.json'
 PORT = 21567
+OLD_USBS = []
+
+class NoUSBInfoConfig(Exception):
+    pass
 
 class TSServProtocol(protocol.Protocol):
-
     def connectionMade(self):
+        usb_change_flag = False
 
         clnt = self.clnt = self.transport.getPeer().port
         print '...conneting from:', clnt
-
         if not os.path.exists(CONF_FILE):
             raise NoUSBInfoConfig('There is no '+CONF_FILE)
 
-        dev_usbs = filter(lambda x: 'ttyUSB' in x, os.listdir('/dev/'))
-
-        _flag = False
         with open(CONF_FILE, 'r+') as f:
             fcntl.flock(f, fcntl.LOCK_EX)
             data = json.load(f)
-            lava_used = []
-            #收集哪些是lava用的端口
-            for k, v in data.iteritems():
-                if data[k]['who'] != 0:
-                    lava_used.append(k)
+            #如果有变化了再执行下边的语句
+            while not usb_change_flag:
+                dev_usbs = filter(lambda x: 'ttyUSB' in x, os.listdir('/dev/'))
+                time.sleep(0.2)
+                print 'data ', dev_usbs, ' ', data.get('old_usb')
+                if dev_usbs != data.get('old_usb'):
+                    new_usb = set(dev_usbs) - set(data.get('old_usb'))
+                    data['old_usb'] = copy.copy(dev_usbs)
+                    print 'after copy: ', data.get('old_usb')
+                    usb_change_flag = True
+            print '检测到有新的usb产生', new_usb
+            n_usb = new_usb.pop()
+            self.transport.write(n_usb.encode('utf-8'))
 
-            #将不是lava用的找出来
-            lava_not_used = set(dev_usbs) - (lava_used)
-
-            #把不是lava用的更新到USB info文件中
-            for u in lava_not_used:
-                data[u] = {'used':True, 'who':0}
-            #从已用的usb中找到中间没有用的usb口,因为中间的口可能有空闲的
-            for i in range(dev_usbs[-1][-1]):
-                checking_usb = 'ttyUSB'+str(i)
-                if checking_usb in dev_usbs:
-                    continue
-                _flag = True
-                data[checking_usb] = {'used':True, 'who':clnt}
-                self.transport.write(checking_usb.encode('utf-8'))
-                break
-            #如果从已有的口中找不到就生成一个新的
-            if not _flag:
-                new_usb = 'ttyUSB'+str(int(dev_usbs[-1][-1]) + 1)
-                data[new_usb] = {'used':True, 'who':clnt}
+            print data, clnt
+            data[n_usb]= {'used':True, 'who':clnt}
             #将最新的数据更新到文件中
             f.seek(0)
             f.truncate()
             json.dump(data, f)
+            f.flush()
 
             fcntl.flock(f, fcntl.LOCK_UN)
 
@@ -68,15 +58,10 @@ class TSServProtocol(protocol.Protocol):
             fcntl.flock(f, fcntl.LOCK_EX)
             data = json.load(f)
             for k, v in data.iteritems():
+                if isinstance(v, list):
+                    continue
                 if str(v['who']) == str(clnt):
                     used_usb = k
-                    # v['who'] = 0
-                    # v['used'] = False
-                    # f.seek(0)
-                    # f.truncate()
-                    # json.dump(data, f)
-                    # f.flush()
-                    # self.transport.write(k.encode('utf-8'))
                     break
             fcntl.flock(f, fcntl.LOCK_UN)
 
@@ -88,9 +73,8 @@ class TSServProtocol(protocol.Protocol):
             with open(CONF_FILE, 'r+') as f:
                 fcntl.flock(f, fcntl.LOCK_EX)
                 data = json.load(f)
-                if used_usb != '':
-                    data[used_usb]['who'] = 0
-                    data[used_usb]['used'] = False
+                data.pop(used_usb)
+                data['old_usb'].remove(used_usb)
                 f.seek(0)
                 f.truncate()
                 json.dump(data, f)
