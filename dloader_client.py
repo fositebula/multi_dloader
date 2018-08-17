@@ -18,6 +18,7 @@ def dloader(pac, ttyusbx):
     logger.info('fun dloader')
     #pro = subprocess.run(['sudo', DLOADER_PATH, '-pac', pac, '-dev', ttyusbx, '-reset'])
     os.system('sudo '+ DLOADER_PATH+ ' -pac '+ pac+ ' -dev '+ ttyusbx+' -reset')
+    reactor.stop()
 
 def enter_autodloader(sn):
     logger.info('fun enter dloader: '+str(sn))

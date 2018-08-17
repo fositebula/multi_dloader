@@ -33,6 +33,9 @@ class TSServProtocol(protocol.Protocol):
                 if dev_usbs != data.get('old_usb'):
                     new_usb = set(dev_usbs) - set(data.get('old_usb'))
                     data['old_usb'] = copy.copy(dev_usbs)
+                    #usb减少了
+                    if not new_usb:
+                        continue
                     print 'after copy: ', data.get('old_usb')
                     usb_change_flag = True
             print '检测到有新的usb产生', new_usb
