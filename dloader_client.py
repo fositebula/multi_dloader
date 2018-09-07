@@ -27,6 +27,10 @@ def enter_autodloader(sn):
 class Echo(Protocol):
     def dataReceived(self, data):
         ttyUSBX = data
+        print ttyUSBX
+        if ttyUSBX == 'time_out':
+            print 'fail'
+            reactor.stop()
         pac = sys.argv[1]
         # serial_number = sys.argv[2]
         # enter_autodloader(serial_number)
