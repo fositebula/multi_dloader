@@ -72,6 +72,7 @@ class TSServProtocol(protocol.Protocol):
         if self.dloader_pids.get(self.clnt):
             print 'kill: ', self.dloader_pids.get(self.clnt)
             os.kill(int(self.dloader_pids[self.clnt]), signal.SIGKILL)
+            
         pass
         # os.kill(self.dloader_pid, os.SIGKILL)
         # clnt = self.clnt = self.transport.getPeer().port

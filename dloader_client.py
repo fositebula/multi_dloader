@@ -17,8 +17,8 @@ THIS_USB = ''
 
 def dloader(pac, ttyusbx):
     logger.info('fun dloader')
-    pro = subprocess.Popen(['sudo', DLOADER_PATH, '-pac', pac, '-dev', ttyusbx, '-reset'])
-    # pro = subprocess.Popen(['python', 'test.py'])
+    # pro = subprocess.Popen(['sudo', DLOADER_PATH, '-pac', pac, '-dev', ttyusbx, '-reset'])
+    pro = subprocess.Popen(['python', 'test.py'])
     # pro = subprocess.Popen(['sleep', '10'])
     return pro
     # os.system('sudo '+ DLOADER_PATH+ ' -pac '+ pac+ ' -dev '+ ttyusbx+' -reset')
@@ -90,7 +90,9 @@ class TSClntProtocol(Protocol):
         logger.info('ECHO pac ' + pac)
         print data
         p = dloader(pac, ttyUSBX)
-        self.transport.write(str(p.pid).encode('utf-8'))
+        print os.getpgid(p.pid)
+        pgid = os.getpgid(p.pid)
+        self.transport.write('-'+str(pgid).encode('utf-8'))
         self.transport.doWrite()
 
         print 'transport finshed:', str(p.pid)
