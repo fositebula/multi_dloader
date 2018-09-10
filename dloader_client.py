@@ -5,6 +5,7 @@ import traceback
 import subprocess
 import os
 import sys
+import time
 from twisted.internet import reactor
 
 DLOADER_PATH = '/home/apuser/lavatest/DLoader_R1.18.0601/Bin/sprd_dloader/DLoader'
@@ -16,49 +17,95 @@ THIS_USB = ''
 
 def dloader(pac, ttyusbx):
     logger.info('fun dloader')
-    #pro = subprocess.run(['sudo', DLOADER_PATH, '-pac', pac, '-dev', ttyusbx, '-reset'])
-    os.system('sudo '+ DLOADER_PATH+ ' -pac '+ pac+ ' -dev '+ ttyusbx+' -reset')
-    reactor.stop()
+    pro = subprocess.Popen(['sudo', DLOADER_PATH, '-pac', pac, '-dev', ttyusbx, '-reset'])
+    # pro = subprocess.Popen(['python', 'test.py'])
+    # pro = subprocess.Popen(['sleep', '10'])
+    return pro
+    # os.system('sudo '+ DLOADER_PATH+ ' -pac '+ pac+ ' -dev '+ ttyusbx+' -reset')
+    # reactor.stop()
 
-def enter_autodloader(sn):
-    logger.info('fun enter dloader: '+str(sn))
-    os.system('adb -s ' + sn + 'reboot autodloader')
+# def enter_autodloader(sn):
+#     logger.info('fun enter dloader: '+str(sn))
+#     os.system('adb -s ' + sn + 'reboot autodloader')
 
-class Echo(Protocol):
+# class Echo(Protocol):
+#     def dataReceived(self, data):
+#         ttyUSBX = data
+#         if ttyUSBX == 'time_out':
+#             print 'fail'
+#             reactor.stop()
+#         pac = sys.argv[1]
+#         # serial_number = sys.argv[2]
+#         # enter_autodloader(serial_number)
+#         logger.info('ECHO pac '+pac)
+#         print data
+#         p = dloader(pac, ttyUSBX)
+#         self.transport.write(str(p.pid).encode('utf-8'))
+#
+#         print 'transport finshed:', str(p.pid)
+#         p.wait()
+#         reactor.stop()
+#         #stdout.write(data)
+
+
+# class EchoClientFactory(ClientFactory):
+#     def startedConnecting(self, connector):
+#         print 'Started to connect.'
+#         logger.info('Started to connect.')
+#
+#     def buildProtocol(self, addr):
+#         print 'Connected.'
+#         logger.info('Connected.')
+#         return Echo()
+#
+#     def clientConnectionLost(self, connector, reason):
+#         print 'Lost connection. Reason:', reason
+#         logger.info('Lost connection. Reason: ' +str(reason))
+#
+#     def clientConnectionFailed(self, connector, reason):
+#         print 'Connection failed. Reason:', reason
+#         logger.info('Connection failed.  Reason: ' +str(reason))
+
+
+class TSClntProtocol(Protocol):
+    # def sendData(self):
+    #     data = raw_input("> ")
+    #     if data:
+    #         print '...sending %s...' % data
+    #         self.transport.write(data)
+    #     else:
+    #         self.transport.loseConnection()
+    #
+    # def connectionMade(self):
+    #     self.sendData()
+
     def dataReceived(self, data):
         ttyUSBX = data
-        print ttyUSBX
         if ttyUSBX == 'time_out':
             print 'fail'
             reactor.stop()
         pac = sys.argv[1]
         # serial_number = sys.argv[2]
         # enter_autodloader(serial_number)
-        logger.info('ECHO pac '+pac)
-        dloader(pac, ttyUSBX)
-        #stdout.write(data)
+        logger.info('ECHO pac ' + pac)
+        print data
+        p = dloader(pac, ttyUSBX)
+        self.transport.write(str(p.pid).encode('utf-8'))
+        self.transport.doWrite()
 
+        print 'transport finshed:', str(p.pid)
+        p.wait()
+        # reactor.stop()
+        self.transport.loseConnection()
 
-class EchoClientFactory(ClientFactory):
-    def startedConnecting(self, connector):
-        print 'Started to connect.'
-        logger.info('Started to connect.')
+class TSClntFactory(ClientFactory):
+    protocol = TSClntProtocol
+    clientConnectionLost = clientConnectionFailed = lambda self, connector, reason: reactor.stop()
 
-    def buildProtocol(self, addr):
-        print 'Connected.'
-        logger.info('Connected.')
-        return Echo()
+if __name__ == '__main__':
 
-    def clientConnectionLost(self, connector, reason):
-        print 'Lost connection. Reason:', reason
-        logger.info('Lost connection. Reason: ' +str(reason))
-
-    def clientConnectionFailed(self, connector, reason):
-        print 'Connection failed. Reason:', reason
-        logger.info('Connection failed.  Reason: ' +str(reason))
-
-try:
-    reactor.connectTCP('localhost', 21567, EchoClientFactory())
-    reactor.run()
-except:
-    logger.info(traceback.format_exc())
+    try:
+        reactor.connectTCP('localhost', 21567, TSClntFactory())
+        reactor.run()
+    except:
+        logger.info(traceback.format_exc())
